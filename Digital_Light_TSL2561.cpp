@@ -37,20 +37,28 @@ uint8_t TSL2561_CalculateLux::readRegister(int deviceAddress, int address)
     uint8_t value;
      Wire.beginTransmission(deviceAddress);
      Wire.write(address);                // register to read
-     Wire.endTransmission();
-     Wire.requestFrom(deviceAddress, 1); // read a byte
-     while(!Wire.available());
-     value = Wire.read();
-     //delay(100);
-     return value;
+
+     if (Wire.endTransmission()!=0)
+     {
+	Serial.println("not correct end data");
+	return 0;
+     }	
+     else
+     {			
+     	Wire.requestFrom(deviceAddress, 1); // read a byte
+     	while(!Wire.available());
+     	value = Wire.read();
+     	//delay(100);
+     	return value;
+     }	
 }
 
-void TSL2561_CalculateLux::writeRegister(int deviceAddress, int address, uint8_t val)
+int TSL2561_CalculateLux::writeRegister(int deviceAddress, int address, uint8_t val)
 {
      Wire.beginTransmission(deviceAddress);  // start transmission to device
      Wire.write(address);                    // send register address
      Wire.write(val);                        // send value to write
-     Wire.endTransmission();                 // end transmission
+     return Wire.endTransmission();                 // end transmission
      //delay(100);
 }
 void TSL2561_CalculateLux::getLux(void)
@@ -64,22 +72,33 @@ void TSL2561_CalculateLux::getLux(void)
     ch0 = (CH0_HIGH<<8) | CH0_LOW;
     ch1 = (CH1_HIGH<<8) | CH1_LOW;
 }
-void TSL2561_CalculateLux::init()
-{
-   writeRegister(TSL2561_Address,TSL2561_Control,0x03);  // POWER UP
-   writeRegister(TSL2561_Address,TSL2561_Timing,0x00);  //No High Gain (1x), integration time of 13ms
-   writeRegister(TSL2561_Address,TSL2561_Interrupt,0x00);
-   writeRegister(TSL2561_Address,TSL2561_Control,0x00);  // POWER Down
+bool TSL2561_CalculateLux::init()
+{		
+   if (writeRegister(TSL2561_Address,TSL2561_Control,0x03)!=0){return false;}  // POWER UP
+   if (writeRegister(TSL2561_Address,TSL2561_Timing,0x00)!=0){return false;}  //No High Gain (1x), integration time of 13ms
+   if (writeRegister(TSL2561_Address,TSL2561_Interrupt,0x00)!=0){return false;}
+   if (writeRegister(TSL2561_Address,TSL2561_Control,0x00)!=0){return false;}  // POWER Down
+   return true; 	
 }
+bool TSL2561_CalculateLux::PowerDown()
+{		
+   if (writeRegister(TSL2561_Address,TSL2561_Control,0x00)!=0){return false;}  // POWER Down
+   return true; 	
+}
+
 signed long TSL2561_CalculateLux::readVisibleLux()
 {
-   writeRegister(TSL2561_Address,TSL2561_Control,0x03);  // POWER UP
+   if (writeRegister(TSL2561_Address,TSL2561_Control,0x03)!=0){return -1;}  // POWER UP
    delay(14);
    getLux();
 
-   writeRegister(TSL2561_Address,TSL2561_Control,0x00);  // POWER Down
+   if (writeRegister(TSL2561_Address,TSL2561_Control,0x00)!=0){return -1;}  // POWER Down
    if(ch1 == 0)
    { 
+     PowerDown();
+     delay(14);
+     init();
+     delay(14);		 		
      return 0;
    }
    if(ch0/ch1 < 2 && ch0 > 4900)

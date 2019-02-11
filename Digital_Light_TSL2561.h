@@ -106,9 +106,11 @@ class TSL2561_CalculateLux
   signed long readVisibleLux();
   unsigned long calculateLux(unsigned int iGain, unsigned int tInt,int iType);
   void getLux(void);
-  void init(void);
+  bool init(void);
+  bool PowerDown(void);
   uint8_t readRegister(int deviceAddress, int address);
-  void writeRegister(int deviceAddress, int address, uint8_t val);
+  int writeRegister(int deviceAddress, int address, uint8_t val);
+
  private:
   uint8_t CH0_LOW,CH0_HIGH,CH1_LOW,CH1_HIGH;
   uint16_t ch0,ch1;
